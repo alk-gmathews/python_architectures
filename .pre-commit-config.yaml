@@ -13,7 +13,7 @@ repos:
         language: system
         pass_filenames: true
         types: [python]
-        args: ["--ignore=E501"]
+        args: ["--ignore=E501,W503"]
       - id: isort
         name: isort
         entry: poetry run isort
