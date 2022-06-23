@@ -1,9 +1,11 @@
-from model.model import Batch, OrderLine
+from datetime import date, timedelta
+
+from model.model import Batch, OrderLine, allocate
 
 
-def make_batch_and_line(sku, batch_qty, line_qty):
+def make_batch_and_line(sku, batch_qty, line_qty, eta=None):
     return (
-        Batch(ref="abatch", sku=sku, qty=batch_qty),
+        Batch(ref="abatch", sku=sku, qty=batch_qty, eta=eta),
         OrderLine(orderid="anorder", sku=sku, qty=line_qty),
     )
 
@@ -44,7 +46,7 @@ def test_can_allocate_if_sku_matches_in_batch():
 
 
 def test_cannot_allocate_if_sku_does_not_match_in_batch():
-    batch = Batch(ref="abatch", sku="asku", qty=10)
+    batch = Batch(ref="abatch", sku="asku", qty=10, eta=None)
     order_line = OrderLine(orderid="anorder", sku="bsku", qty=9)
     assert not batch.can_allocate(order_line)
 
@@ -67,3 +69,24 @@ def test_can_allocate_an_order_line_only_once():
     batch.allocate(order_line)
     batch.allocate(order_line)
     assert batch.available_quantity == 10
+
+
+def test_allocates_to_in_stock_batch():
+    tomorrow = date.today() + timedelta(days=1)
+    in_stock_batch = Batch(ref="in_stock_batch", sku="asku", qty=10, eta=None)
+    shipment_batch = Batch(ref="shipment_batch", sku="asku", qty=10, eta=tomorrow)
+    order_line = OrderLine(orderid="anorder", sku="asku", qty=10)
+    allocate(order_line, [in_stock_batch, shipment_batch])
+    assert in_stock_batch.available_quantity == 0
+    assert shipment_batch.available_quantity == 10
+
+
+def test_allocates_to_earliest_available_batch():
+    today = date.today()
+    tomorrow = date.today() + timedelta(days=1)
+    today_batch = Batch(ref="in_stock_batch", sku="asku", qty=10, eta=today)
+    tomorrow_batch = Batch(ref="shipment_batch", sku="asku", qty=10, eta=tomorrow)
+    order_line = OrderLine(orderid="anorder", sku="asku", qty=10)
+    allocate(order_line, [today_batch, tomorrow_batch])
+    assert today_batch.available_quantity == 0
+    assert tomorrow_batch.available_quantity == 10

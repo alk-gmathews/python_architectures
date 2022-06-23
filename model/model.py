@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Set
+from datetime import date
+from typing import List, Optional, Set
 
 
 @dataclass(frozen=True)
@@ -10,10 +11,11 @@ class OrderLine:
 
 
 class Batch:
-    def __init__(self, ref: str, sku: str, qty: int):
+    def __init__(self, ref: str, sku: str, qty: int, eta: Optional[date]):
         self.ref = ref
         self.sku = sku
         self._purchased_quantity = qty
+        self.eta = eta
         self._allocations: Set[OrderLine] = set()
 
     @property
@@ -37,3 +39,21 @@ class Batch:
 
     def can_deallocate(self, order_line: OrderLine) -> bool:
         return order_line in self._allocations
+
+    def __eq__(self, other):
+        if not isinstance(other, Batch):
+            return False
+        return self.reference == other.reference
+
+    def __gt__(self, other):
+        if self.eta is None:
+            return False
+        if other.eta is None:
+            return True
+        return self.eta > other.eta
+
+
+def allocate(order_line: OrderLine, batches: List[Batch]):
+    earliest_batch = min([batch for batch in batches if batch.can_allocate(order_line)])
+    if earliest_batch:
+        earliest_batch.allocate(order_line)
