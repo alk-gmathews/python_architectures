@@ -1,6 +1,8 @@
 from datetime import date, timedelta
 
-from model.model import Batch, OrderLine, allocate
+import pytest
+
+from model.model import Batch, OrderLine, OutOfStock, allocate
 
 
 def make_batch_and_line(sku, batch_qty, line_qty, eta=None):
@@ -90,3 +92,15 @@ def test_allocates_to_earliest_available_batch():
     allocate(order_line, [today_batch, tomorrow_batch])
     assert today_batch.available_quantity == 0
     assert tomorrow_batch.available_quantity == 10
+
+
+def test_allocate_raises_out_of_stock_exception_if_cannot_allocate():
+    batch, order_line = make_batch_and_line(sku="asku", batch_qty=10, line_qty=20)
+    with pytest.raises(OutOfStock, match="asku"):
+        allocate(order_line, [batch])
+
+
+def test_allocate_returns_allocated_batch_reference():
+    batch, order_line = make_batch_and_line(sku="asku", batch_qty=10, line_qty=10)
+    allocated_batch_reference = allocate(order_line, [batch])
+    assert allocated_batch_reference == batch.ref

@@ -6,6 +6,7 @@ authors = ["George Mathews <geomatthews@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+SQLAlchemy = "^1.4.39"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"

@@ -54,6 +54,15 @@ class Batch:
 
 
 def allocate(order_line: OrderLine, batches: List[Batch]):
-    earliest_batch = min([batch for batch in batches if batch.can_allocate(order_line)])
-    if earliest_batch:
-        earliest_batch.allocate(order_line)
+    available_batches = [batch for batch in batches if batch.can_allocate(order_line)]
+    if not available_batches:
+        raise OutOfStock(
+            f"We cannot allocate order line: <order id: {order_line.orderid}>, <sku: {order_line.sku}>, <quantity: {order_line.qty}>"
+        )
+    earliest_batch = min(available_batches)
+    earliest_batch.allocate(order_line)
+    return earliest_batch.ref
+
+
+class OutOfStock(Exception):
+    pass
